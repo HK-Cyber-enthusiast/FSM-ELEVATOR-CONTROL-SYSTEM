@@ -24,15 +24,15 @@ Digital Logic Design Project — HTML, CSS, JavaScript.
 | F3    | 11    |
 
 ## 🔢 Boolean Equations
-QA+ = QB.X + QA.X + QA.QB.X'
-QB+ = QB'.X + QA.QB' + QA.QB.X
-Z1 = X'.(QA+QB)
-Z0 = X.(QA'+QB')
-D_fsm = QA'.QB'.X' + QA.QB.X + E
+- QA+ = QB.X + QA.X + QA.QB.X'
+- QB+ = QB'.X + QA.QB' + QA.QB.X
+- Z1 = X'.(QA+QB)
+- Z0 = X.(QA'+QB')
+- D_fsm = QA'.QB'.X' + QA.QB.X + E
 
 ## 🚪 Door Logic
-NORMAL:    D_actual = D_fsm OR ARR
-EMERGENCY: D_physical = D_fsm AND (phys == G)
+- NORMAL:    D_actual = D_fsm OR ARR
+- EMERGENCY: D_physical = D_fsm AND (phys == G)
 
 - `X = 1` → UP
 - `X = 0` → DOWN
