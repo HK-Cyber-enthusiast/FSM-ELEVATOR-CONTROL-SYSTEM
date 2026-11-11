@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Elevator Control System - FSM Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{font-family:'Poppins',Arial;margin:0;background:#0b0e1a;color:#fff}
+.hero{background:linear-gradient(135deg,#00e5ff,#7c4dff,#ff2d95);padding:24px 12px;text-align:center}
+.hero h1{margin:0;font-size:30px}.pill{display:inline-block;background:rgba(255,255,255,.25);padding:5px 12px;border-radius:20px;font-size:12px;margin:3px}
+.wrap{max-width:1100px;margin:auto;padding:14px}
+.card{background:#141830;border:1px solid #2a2f5a;border-radius:18px;padding:18px;margin:14px 0}
+h2{color:#00e5ff;margin:0 0 10px}h3{color:#ff9100}
+.scene{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.building{width:420px;max-width:100%;flex-shrink:0;background:#d9d9d9;border-radius:12px;overflow:hidden;color:#111;box-shadow:0 20px 40px rgba(0,0,0,.6)}
+.roof{background:#222;color:#fff;text-align:center;padding:10px;font-weight:800;font-size:16px}
+.floors{position:relative;height:440px;width:100%}
+.floorRow{display:flex;height:110px;border-bottom:4px solid #999;background:#f2f2f2;position:relative;width:100%}
+.floorLabel{width:52px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800}
+.floorLabel small{font-weight:400;font-size:11px}
+.shaft{flex:1;background:#1a1a1a;position:relative;border-left:3px solid #555;border-right:3px solid #555;overflow:hidden}
+.shaftDoor{position:absolute;top:5px;left:22px;right:22px;height:100px;display:flex;overflow:hidden;z-index:2}
+.shaftDoor div{flex:1;background:linear-gradient(#ddd,#aaa);border:1px solid #777;transition:transform .8s}
+.shaftDoor.open .sdL{transform:translateX(-100%)}.shaftDoor.open .sdR{transform:translateX(100%)}
+.person{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:28px;z-index:1}
+.callBtn{width:70px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.callBtn button{width:38px;height:38px;border-radius:50%;border:2px solid #333;background:#fff;font-size:16px;cursor:pointer;transition:all .3s}
+.callBtn button:disabled{opacity:.45;cursor:not-allowed}
+.callBtn button.litUp{background:#ffea00 !important;border-color:#ffea00;box-shadow:0 0 12px #ffea00;transform:scale(1.1)}
+.callBtn button.litDn{background:#ffea00 !important;border-color:#ffea00;box-shadow:0 0 12px #ffea00;transform:scale(1.1)}
+.lift{position:absolute;left:calc(52px + 22px);width:calc(100% - 52px - 70px - 44px);height:100px;transition:top .9s ease;z-index:10}
+.cabin{position:absolute;inset:0;background:#2b2f4a;border:3px solid #00e5ff;border-radius:6px;overflow:hidden;display:flex}
+.cabin .dL,.cabin .dR{flex:1;background:linear-gradient(#e8e8e8,#999);transition:transform .8s;border:1px solid #444;z-index:3}
+.cabin.open .dL{transform:translateX(-100%)}.cabin.open .dR{transform:translateX(100%)}
+.cabinInner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:1}
+.display{position:absolute;top:4px;right:6px;background:#000;color:#ffea00;font-family:monospace;padding:3px 8px;border-radius:6px;font-size:14px;z-index:4}
+.insidePeople{position:absolute;bottom:4px;left:0;right:0;display:flex;justify-content:center;gap:4px;font-size:20px;z-index:2}
+.panel{background:#11142e;border-radius:14px;padding:16px;min-width:300px;flex:1}
+.floorBtns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.floorBtns button{padding:14px;border-radius:50%;border:2px solid #00e5ff;background:#1e2a6b;color:#fff;font-weight:800;cursor:pointer}
+.floorBtns button:disabled{opacity:.45;cursor:not-allowed}
+.floorBtns button.cur{outline:3px solid #00e5ff}
+.small{font-size:13px;color:#aaa}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #334;padding:8px;text-align:center}th{background:#1e2a6b;color:#00e5ff}
+code{font-family:'JetBrains Mono',monospace;color:#7CFFB2}.eq{background:#050816;padding:12px;border-radius:12px;border-left:4px solid #00e5ff;font-family:'JetBrains Mono',monospace}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:650px){.grid2{grid-template-columns:1fr}.building{width:100%}}
+.kmap-wrap{width:100%;max-width:420px;margin:auto;background:#fff;color:#000;padding:14px;border-radius:12px;display:flex;flex-direction:column}
+.kmap-title{text-align:center;font-weight:800;font-size:17px;color:#111;margin-bottom:8px}
+.kmap{position:relative;width:100%;height:172px;border:3px solid #000;background:#fff}
+.kmap-grid{position:absolute;inset:0;display:grid;grid-template-columns:52px repeat(4,1fr);grid-template-rows:38px 67px 67px}
+.kmap-overlay{position:absolute;inset:0;display:grid;grid-template-columns:52px repeat(4,1fr);grid-template-rows:38px 67px 67px;pointer-events:none;z-index:2}
+.kmap .cell{border:1px solid #000;display:flex;align-items:center;justify-content:center;font-weight:800}
+.kmap .head{background:#1e2a6b;color:#00e5ff;font-size:16px}
+.kmap .rowhead{background:#1e2a6b;color:#00e5ff;font-size:18px}
+.kmap .val{font-size:26px;color:#000}
+.diag{position:relative;overflow:hidden;padding:0 !important;background:#fff !important}
+.diag svg{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.diag .topVar{position:absolute;top:1px;right:2px;z-index:2;color:#000;font-size:11px;font-weight:800;line-height:1;text-align:right;background:#fff;padding:0 1px}
+.diag .botVar{position:absolute;bottom:1px;left:4px;z-index:2;color:#000;font-size:13px;font-weight:800;background:#fff;padding:0 1px}
+.group{border:3px solid;pointer-events:none;margin:-1px}
+.g-red{border-color:#ff0000;background:rgba(255,0,0,.14)}
+.g-green{border-color:#00c853;background:rgba(0,200,83,.14)}
+.g-blue{border-color:#0000ff;background:rgba(0,0,255,.14)}
+.diagBox{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.diagBox div{background:#0b0e1a;border:1px solid #334;border-radius:10px;padding:8px 12px;text-align:center;font-size:13px}
+</style></head><body>
+<div class="hero"><h1>🏢 REAL ELEVATOR — FSM CONTROL</h1><p>Door closes → Lift moves → Stops exactly on floor → Door opens on that floor</p>
+<span class="pill">G = 00</span><span class="pill">F1 = 01</span><span class="pill">F2 = 10</span><span class="pill">F3 = 11</span></div>
+<div class="wrap">
+<div class="card"><h2>🏗️ Building — Live Lift</h2>
+<div class="scene">
+<div class="building"><div class="roof">◉ SUNSHINE TOWER • ELEVATOR FSM</div>
+<div class="floors" id="floors">
+<div class="lift" id="lift" style="top:335px"><div class="cabin" id="cabin"><div class="display" id="disp">G •</div><div class="dL"></div><div class="dR"></div><div class="cabinInner"><div id="inside" class="insidePeople">🧑 👩</div><div id="cabinTxt" style="color:#fff;font-weight:800;font-size:11px;margin-top:16px">G • DOOR OPEN</div></div></div></div>
+</div></div>
+<div class="panel"><h3>🕹️ Inside Lift Panel</h3>
+<div class="floorBtns"><button id="btn0" onclick="goTo(0)">G</button><button id="btn1" onclick="goTo(1)">1</button><button id="btn2" onclick="goTo(2)">2</button><button id="btn3" onclick="goTo(3)">3</button></div><br>
+<button id="upBtn" onclick="moveStep(1)" style="background:#00e676;width:48%">▲ UP (X=1)</button><button id="dnBtn" onclick="moveStep(0)" style="background:#ff9100;width:48%">▼ DOWN (X=0)</button><br><br>
+<button onclick="emergency()" style="background:#ff1744;color:#fff;width:100%">🚨 EMERGENCY (E=1) → G</button><br><br>
+<b>Monitor</b><br>Present: <code id="ps">00 (G)</code> &nbsp; Physical: <code id="phys">G</code><br>Input X: <code id="inp">-</code> &nbsp; E: <code id="eVal">0</code><br>Next: <code id="ns">-</code> &nbsp; Output: <code id="z">00 STOP</code><br>Door FSM: <code id="dFsm">1</code> &nbsp; ARR: <code id="arrVal">0</code> &nbsp; Door: <code id="d">OPEN</code><br>Target: <code id="tgt">-</code><br><br>
+<div class="eq">QA+ = QB.X + QA.X + QA.QB.X'<br>QB+ = QB'.X + QA.QB' + QA.QB.X<br>Z1 = X'.(QA+QB) &nbsp <br>Z0 = X.(QA'+QB')<br>D_fsm = QA'.QB'.X' + QA.QB.X + E<br><br>E=1 → QA+ = 0, QB+ = 0 (G)</div>
+</div></div></div>
+
+<div class="card"><h2>🔄 State Diagram</h2><p style="text-align:center;font-size:20px"><b>G</b> ⇄ <b>F1</b> ⇄ <b>F2</b> ⇄ <b>F3</b></p>
+<div class="diagBox"><div><b>G (00)</b><br>X=1 → F1 ↑<br>X=0 → <b>G (Stay)</b><br>D=1</div><div><b>F1 (01)</b><br>X=1 → F2 ↑<br>X=0 → G ↓</div><div><b>F2 (10)</b><br>X=1 → F3 ↑<br>X=0 → F1 ↓</div><div><b>F3 (11)</b><br>X=1 → <b>F3 (Stay)</b><br>X=0 → F2 ↓<br>D=1</div><div style="border-color:#ff1744"><b>🚨 E=1</b><br>From ANY state<br>→ <b>G (00)</b><br>D_physical opens at G only</div></div></div>
+
+<div class="card"><h2>📊 State Table</h2>
+<table><tr><th>QA</th><th>QB</th><th>X</th><th>QA+</th><th>QB+</th><th>Z1</th><th>Z0</th><th>D_fsm</th><th>Action</th></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>G Stay, Door Open</td></tr>
+<tr><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>G → F1 ↑</td></tr>
+<tr><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>F1 → G ↓</td></tr>
+<tr><td>0</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>F1 → F2 ↑</td></tr>
+<tr><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td>F2 → F1 ↓</td></tr>
+<tr><td>1</td><td>0</td><td>1</td><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>F2 → F3 ↑</td></tr>
+<tr><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>F3 → F2 ↓</td></tr>
+<tr><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>1</td><td>F3 Stay, Door Open</td></tr></table></div>
+
+<div class="card"><h2>🗺️ KARNAUGH MAP (K-MAP)</h2>
+<div class="grid2">
+<div class="kmap-wrap"><div class="kmap-title">QA+ • Minterms: 3, 5, 6, 7</div>
+<div class="kmap"><div class="kmap-grid">
+<div class="cell diag"><svg><line x1="0" y1="0" x2="52" y2="38" stroke="black" stroke-width="2"/></svg><span class="topVar">QA QB</span><span class="botVar">X</span></div>
+<div class="cell head">00</div><div class="cell head">01</div><div class="cell head">11</div><div class="cell head">10</div>
+<div class="cell rowhead">0</div><div class="cell val">0</div><div class="cell val">0</div><div class="cell val">1</div><div class="cell val">0</div>
+<div class="cell rowhead">1</div><div class="cell val">0</div><div class="cell val">1</div><div class="cell val">1</div><div class="cell val">1</div>
+</div><div class="kmap-overlay">
+<div class="group g-red" style="grid-column:3/5;grid-row:3/4"></div>
+<div class="group g-green" style="grid-column:4/6;grid-row:3/4"></div>
+<div class="group g-blue" style="grid-column:4/5;grid-row:2/3"></div>
+</div></div>
+<p style="text-align:center;color:#111;margin:10px 0 0"><code style="color:#0a7">QA+ = QB.X + QA.X + QA.QB.X'</code><br><small>Red = QB.X {3,7} &nbsp; Green = QA.X {5,7} &nbsp; Blue = QA.QB.X' {6}</small></p></div>
+<div class="kmap-wrap"><div class="kmap-title">QB+ • Minterms: 1, 4, 5, 7</div>
+<div class="kmap"><div class="kmap-grid">
+<div class="cell diag"><svg><line x1="0" y1="0" x2="52" y2="38" stroke="black" stroke-width="2"/></svg><span class="topVar">QA QB</span><span class="botVar">X</span></div>
+<div class="cell head">00</div><div class="cell head">01</div><div class="cell head">11</div><div class="cell head">10</div>
+<div class="cell rowhead">0</div><div class="cell val">0</div><div class="cell val">0</div><div class="cell val">0</div><div class="cell val">1</div>
+<div class="cell rowhead">1</div><div class="cell val">1</div><div class="cell val">0</div><div class="cell val">1</div><div class="cell val">1</div>
+</div><div class="kmap-overlay">
+<div class="group g-red" style="grid-column:2/3;grid-row:3/4"></div>
+<div class="group g-red" style="grid-column:5/6;grid-row:3/4"></div>
+<div class="group g-green" style="grid-column:5/6;grid-row:2/4"></div>
+<div class="group g-blue" style="grid-column:4/5;grid-row:3/4"></div>
+</div></div>
+<p style="text-align:center;color:#111;margin:10px 0 0"><code style="color:#0a7">QB+ = QB'.X + QA.QB' + QA.QB.X</code><br><small>Red = QB'.X {1,5} wrap &nbsp; Green = QA.QB' {4,5} &nbsp; Blue = QA.QB.X {7}</small></p></div>
+<div class="kmap-wrap"><div class="kmap-title">Z1 — Move Down</div>
+<div class="kmap"><div class="kmap-grid">
+<div class="cell diag"><svg><line x1="0" y1="0" x2="52" y2="38" stroke="black" stroke-width="2"/></svg><span class="topVar">QA QB</span><span class="botVar">X</span></div>
+<div class="cell head">00</div><div class="cell head">01</div><div class="cell head">11</div><div class="cell head">10</div>
+<div class="cell rowhead">0</div><div class="cell val">0</div><div class="cell val">1</div><div class="cell val">1</div><div class="cell val">1</div>
+<div class="cell rowhead">1</div><div class="cell val">0</div><div class="cell val">0</div><div class="cell val">0</div><div class="cell val">0</div>
+</div><div class="kmap-overlay">
+<div class="group g-red" style="grid-column:3/5;grid-row:2/3"></div>
+<div class="group g-green" style="grid-column:4/6;grid-row:2/3"></div>
+</div></div>
+<p style="text-align:center;color:#111;margin:10px 0 0"><code style="color:#0a7">Z1 = X'.QB + X'.QA</code><br><small>Red = X'.QB {2,6} &nbsp; Green = X'.QA {4,6}</small></p></div>
+<div class="kmap-wrap"><div class="kmap-title">Z0 — Move Up</div>
+<div class="kmap"><div class="kmap-grid">
+<div class="cell diag"><svg><line x1="0" y1="0" x2="52" y2="38" stroke="black" stroke-width="2"/></svg><span class="topVar">QA QB</span><span class="botVar">X</span></div>
+<div class="cell head">00</div><div class="cell head">01</div><div class="cell head">11</div><div class="cell head">10</div>
+<div class="cell rowhead">0</div><div class="cell val">0</div><div class="cell val">0</div><div class="cell val">0</div><div class="cell val">0</div>
+<div class="cell rowhead">1</div><div class="cell val">1</div><div class="cell val">1</div><div class="cell val">0</div><div class="cell val">1</div>
+</div><div class="kmap-overlay">
+<div class="group g-red" style="grid-column:2/4;grid-row:3/4"></div>
+<div class="group g-green" style="grid-column:2/3;grid-row:3/4"></div>
+<div class="group g-green" style="grid-column:5/6;grid-row:3/4"></div>
+</div></div>
+<p style="text-align:center;color:#111;margin:10px 0 0"><code style="color:#0a7">Z0 = X.QA' + X.QB'</code><br><small>Red = X.QA' {1,3} &nbsp; Green = X.QB' {1,5} wrap</small></p></div>
+</div></div></div>
+<script>
+function fsm(QA,QB,X,E,ARR){
+  let QAplus, QBplus, Z1, Z0, Dfsm;
+  if(E===1){ QAplus=0; QBplus=0; Z1=0; Z0=0; Dfsm=1; }
+  else {
+    QAplus = (QB & X) | (QA & X) | (QA & QB & (1-X));
+    QBplus = ((1-QB) & X) | (QA & (1-QB)) | (QA & QB & X);
+    Z1 = (1-X) & (QA | QB);
+    Z0 = X & ((1-QA) | (1-QB));
+    Dfsm = ((1-QA)&(1-QB)&(1-X)) | (QA & QB & X);
+  }
+  let Dactual = Dfsm | (ARR?1:0);
+  return {QAplus,QBplus,Z1,Z0,Dfsm,Dactual,next:(QAplus<<1)|QBplus};
+}
+let floorNames=["G","F1","F2","F3"], codes=["00","01","10","11"];
+let waitingEmojis=["🧑‍🦱","👩‍🦰","👨‍🦳","🧕"];
+let html=""; for(let i=3;i>=0;i--){html+=`<div class="floorRow"><div class="floorLabel">${floorNames[i]}<small>${codes[i]}</small></div><div class="shaft"><span class="person">${waitingEmojis[i]}</span><div class="shaftDoor" id="shaft${i}"><div class="sdL"></div><div class="sdR"></div></div></div><div class="callBtn"><button onclick="callUp(${i})" id="callUp${i}" title="Call Up">▲</button><button onclick="callDown(${i})" id="callDn${i}" title="Call Down">▼</button><small>Call</small></div></div>`;}
+let floorsEl=document.getElementById("floors");
+let liftEl=document.getElementById("lift");
+floorsEl.innerHTML=html;
+floorsEl.appendChild(liftEl);
+let cur=0, phys=0, busy=false, target=-1, insideCount=2, runId=0, currentE=0, inEmergency=false;
+function topFor(f){return (3-f)*110+5;}
+function setBusy(b){ busy=b; document.querySelectorAll('.floorBtns button, .callBtn button, #upBtn, #dnBtn').forEach(el=>el.disabled=b); }
+function clearCallLights(){ for(let i=0;i<4;i++){document.getElementById("callUp"+i).classList.remove("litUp");document.getElementById("callDn"+i).classList.remove("litDn");} }
+function setCallLight(floor,dir){ clearCallLights(); if(dir==1) document.getElementById("callUp"+floor).classList.add("litUp"); else document.getElementById("callDn"+floor).classList.add("litDn"); }
+function setDoors(floor,open){ for(let i=0;i<4;i++){document.getElementById("shaft"+i).classList.toggle("open", open && i===floor);} document.getElementById("cabin").classList.toggle("open", !!open); }
+function syncLiftToPhys(){ document.getElementById("lift").style.top=topFor(phys)+"px"; document.getElementById("disp").textContent=floorNames[phys]+" "+(inEmergency?"▼":"•"); document.getElementById("phys").textContent=floorNames[phys]+" ("+codes[phys]+")"; }
+function updateUI(z,dFsm,arr,arrow){
+ let dActual = (dFsm|arr)?1:0;
+ syncLiftToPhys();
+ document.getElementById("cabinTxt").textContent=floorNames[phys]+" • "+(dActual?"DOOR OPEN":"DOOR CLOSED");
+ setDoors(phys,!!dActual);
+ document.getElementById("ps").textContent=codes[cur]+" ("+floorNames[cur]+")";
+ document.getElementById("z").textContent=z+" "+(z=="01"?"UP ↑":z=="10"?"DOWN ↓":"STOP");
+ document.getElementById("dFsm").textContent=dFsm;
+ document.getElementById("arrVal").textContent=arr;
+ document.getElementById("d").textContent=dActual?"OPEN":"CLOSED";
+ document.getElementById("eVal").textContent=currentE;
+ document.getElementById("tgt").textContent=target>=0?floorNames[target]:"-";
+ for(let i=0;i<4;i++){document.getElementById("btn"+i).classList.toggle("cur",i===phys);}
+ document.getElementById("inside").textContent="🧑 ".repeat(Math.max(0,insideCount));
+ if(dActual) clearCallLights();
+}
+function callUp(f){ if(f===cur) return; goTo(f,1); }
+function callDown(f){ if(f===cur) return; goTo(f,0); }
+function doFsmStep(x,E,ARR){
+  let QA=(cur>>1)&1, QB=cur&1;
+  let r=fsm(QA,QB,x,E,ARR);
+  document.getElementById("inp").textContent=x;
+  document.getElementById("eVal").textContent=E;
+  document.getElementById("ns").textContent=codes[r.next]+" ("+floorNames[r.next]+")";
+  return r;
+}
+function moveStep(x){
+  if(busy) return;
+  setBusy(true); currentE=0; inEmergency=false;
+  let myRun=++runId;
+  document.getElementById("inp").textContent=x; setDoors(phys,false); setCallLight(cur,x);
+  document.getElementById("arrVal").textContent="0";
+  setTimeout(()=>{
+    if(myRun!==runId) return;
+    let r=doFsmStep(x,0,1);
+    let z = r.Z1?"10":r.Z0?"01":"00";
+    let arrow = r.Z0?"▲":r.Z1?"▼":"•";
+    if(r.next===cur){ setTimeout(()=>{ if(myRun!==runId) return; updateUI("00",r.Dfsm,1,arrow); setBusy(false); },300); return; }
+    cur=r.next; phys=cur; setCallLight(cur,x);
+    document.getElementById("lift").style.top=topFor(phys)+"px";
+    document.getElementById("disp").textContent=floorNames[phys]+" "+arrow;
+    document.getElementById("ps").textContent=codes[cur]+" ("+floorNames[cur]+")";
+    document.getElementById("z").textContent=z+" "+(z=="01"?"UP ↑":"DOWN ↓");
+    document.getElementById("arrVal").textContent="1";
+    setTimeout(()=>{ if(myRun!==runId) return; updateUI(z,r.Dfsm,1,arrow); setBusy(false); },950);
+  },500);
+}
+function goTo(t, dirHint){
+  if(busy||t===cur){ if(t===cur) updateUI("00",0,1,"•"); return;}
+  target=t; setBusy(true); currentE=0; inEmergency=false;
+  let myRun=++runId;
+  document.getElementById("tgt").textContent=floorNames[t];
+  let dir = dirHint!==undefined?dirHint:(t>cur?1:0); setCallLight(t,dir);
+  let step=()=>{
+    if(myRun!==runId) return;
+    if(cur===target){ setBusy(false); target=-1; updateUI("00",0,1,"•"); return;}
+    let x=cur<target?1:0; document.getElementById("inp").textContent=x; setDoors(phys,false); setCallLight(target,x);
+    setTimeout(()=>{
+      if(myRun!==runId) return;
+      let QApeek=(cur>>1)&1, QBpeek=cur&1;
+      let peek=fsm(QApeek,QBpeek,x,0,0);
+      let arrivedNext = (peek.next===target);
+      let r=doFsmStep(x,0,arrivedNext?1:0);
+      let arrow=r.Z0?"▲":"▼";
+      cur=r.next; phys=cur; setCallLight(target,x);
+      document.getElementById("lift").style.top=topFor(phys)+"px";
+      document.getElementById("disp").textContent=floorNames[phys]+" "+arrow;
+      document.getElementById("ps").textContent=codes[cur]+" ("+floorNames[cur]+")";
+      document.getElementById("ns").textContent=codes[r.next]+" ("+floorNames[r.next]+")";
+      document.getElementById("z").textContent=(x==1?"01 UP ↑":"10 DOWN ↓");
+      document.getElementById("dFsm").textContent=r.Dfsm;
+      document.getElementById("arrVal").textContent=arrivedNext?1:0;
+      setTimeout(()=>{ if(myRun!==runId) return; if(cur===target){ updateUI("00",r.Dfsm,1,arrow); step(); } else { updateUI(x==1?"01":"10",r.Dfsm,0,arrow); setTimeout(step,250); } },950);
+    },450);
+  }; step();
+}
+function emergency(){
+  runId++; let myRun=runId;
+  let oldPhys = phys;
+  let oldQA=(cur>>1)&1, oldQB=cur&1;
+  let r = fsm(oldQA, oldQB, 0, 1, 0);
+  currentE=1; inEmergency=true; target=0; setBusy(true);
+  cur = r.next;
+  document.getElementById("inp").textContent="0";
+  document.getElementById("eVal").textContent="1";
+  document.getElementById("ns").textContent="00 (G)";
+  document.getElementById("ps").textContent="00 (G)";
+  document.getElementById("phys").textContent=floorNames[oldPhys]+" ("+codes[oldPhys]+")";
+  document.getElementById("z").textContent="00 STOP";
+  document.getElementById("dFsm").textContent=r.Dfsm;
+  document.getElementById("arrVal").textContent="0";
+  document.getElementById("tgt").textContent="G";
+  document.getElementById("d").textContent="CLOSED";
+  document.getElementById("cabinTxt").textContent=floorNames[phys]+" • DOOR CLOSED";
+  setDoors(phys,false);
+  clearCallLights();
+  let stepPhys=()=>{
+    if(myRun!==runId) return;
+    if(phys===0){
+      inEmergency=false; currentE=0;
+      syncLiftToPhys();
+      document.getElementById("tgt").textContent="-";
+      document.getElementById("eVal").textContent="0";
+      document.getElementById("d").textContent="OPEN";
+      document.getElementById("cabinTxt").textContent="G • DOOR OPEN";
+      document.getElementById("phys").textContent="G (00)";
+      document.getElementById("ns").textContent="00 (G)";
+      setDoors(0,true);
+      setBusy(false); target=-1;
+      return;
+    }
+    phys = phys - 1;
+    syncLiftToPhys();
+    document.getElementById("cabinTxt").textContent=floorNames[phys]+" • DOOR CLOSED";
+    document.getElementById("d").textContent="CLOSED";
+    document.getElementById("dFsm").textContent="1";
+    document.getElementById("ps").textContent="00 (G)";
+    setDoors(phys,false);
+    setTimeout(stepPhys,950);
+  };
+  setTimeout(stepPhys,500);
+}
+updateUI("00",1,0,"•");
+</script></body></html>
